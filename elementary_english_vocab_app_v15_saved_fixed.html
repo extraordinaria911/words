@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>초등 영어단어 앱 v15 수정본</title>
+<style>
+:root{
+  --bg:#f6f8fc; --card:#ffffff; --ink:#1f2937; --sub:#6b7280; --line:#dbe2ea;
+  --blue:#2563eb; --blue-soft:#dbeafe; --red:#b91c1c; --red-soft:#fee2e2;
+  --green:#15803d; --yellow:#fef3c7;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans KR",Arial,sans-serif;
+}
+header{
+  position:sticky;
+  top:0;
+  z-index:10;
+  background:#fff;
+  border-bottom:1px solid var(--line);
+}
+main{max-width:960px;margin:0 auto;padding:16px;}
+h1{margin:0 0 10px 0;font-size:20px;}
+h2{margin:0 0 12px 0;font-size:18px;}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;}
+.tab{
+  background:#fff;
+  border:1px solid var(--line);
+  color:var(--ink);
+  padding:10px 12px;
+  border-radius:999px;
+  font-weight:800;
+  cursor:pointer;
+}
+.tab.active{background:var(--blue);border-color:var(--blue);color:#fff;}
+.panel{display:none}
+.panel.active{display:block}
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:16px;
+  margin:14px 0;
+  box-shadow:0 1px 2px rgba(15,23,42,.04);
+}
+textarea,input,select{
+  width:100%;
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:12px;
+  font-size:15px;
+  background:#fff;
+  color:var(--ink);
+}
+textarea{min-height:180px;resize:vertical;line-height:1.5;}
+button{
+  border:0;
+  border-radius:12px;
+  padding:10px 12px;
+  font-weight:900;
+  cursor:pointer;
+}
+.btn{background:var(--blue);color:#fff;}
+.btn2{background:#e5e7eb;color:#111827;}
+.btn3{background:var(--red-soft);color:var(--red);}
+.btn4{background:var(--yellow);color:#78350f;}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row > *{flex:1 1 auto}
+.small{font-size:13px;color:var(--sub);line-height:1.6;}
+.word{font-size:26px;font-weight:900;color:var(--green);margin:8px 0;}
+.example{font-size:20px;font-weight:800;color:#111827;margin:10px 0;line-height:1.65;}
+.meaning{font-size:18px;margin:10px 0;line-height:1.6;}
+.progress{font-size:14px;color:var(--sub);font-weight:800;text-align:center;}
+mark{background:#dcfce7;color:#166534;border-radius:6px;padding:0 3px;font-weight:900}
+.notice{
+  background:#eff6ff;
+  border:1px solid #bfdbfe;
+  color:#1e3a8a;
+  border-radius:12px;
+  padding:12px;
+  line-height:1.6;
+}
+.saved-item{
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px;
+  margin:10px 0;
+  background:#fff;
+}
+.saved-title{font-size:17px;font-weight:900;margin-bottom:6px;}
+.choice{
+  display:block;
+  width:100%;
+  text-align:left;
+  background:#fff;
+  border:1px solid var(--line);
+  margin:8px 0;
+  padding:12px;
+  border-radius:12px;
+  color:var(--ink);
+}
+.choice.correctChoice{border-color:var(--blue);background:var(--blue-soft);}
+.choice.wrongChoice{border-color:var(--red);background:var(--red-soft);}
+.correct{color:var(--blue);font-weight:900}
+.wrong{color:var(--red);font-weight:900}
+</style>
+</head>
+<body>
+<header>
+  <main>
+    <h1>초등 영어단어 앱 v15 수정본</h1>
+    <div class="tabs">
+      <button class="tab active" data-tab="learn">학습모드</button>
+      <button class="tab" data-tab="quiz">뜻을 읽고 단어 맞히기</button>
+      <button class="tab" data-tab="wrong">오답노트</button>
+      <button class="tab" data-tab="use">활용하기</button>
+      <button class="tab" data-tab="input">입력/저장</button>
+      <button class="tab" data-tab="all">전체 내용</button>
+    </div>
+  </main>
+</header>
+
+<main>
+  <section id="learn" class="panel active">
+    <div class="card">
+      <div class="row">
+        <button class="btn2" onclick="prevCard()">이전</button>
+        <div class="progress" id="learnProgress">0 / 0</div>
+        <button class="btn" onclick="nextCard()">다음</button>
+      </div>
+    </div>
+    <div class="card" id="learnCard">입력/저장에서 단어를 넣어 주세요.</div>
+  </section>
+
+  <section id="quiz" class="panel">
+    <div class="card">
+      <button class="btn" onclick="makeQuiz()">새 문제 만들기</button>
+    </div>
+    <div class="card" id="quizBox">단어를 4개 이상 입력하면 문제가 나옵니다.</div>
+  </section>
+
+  <section id="wrong" class="panel">
+    <div class="card">
+      <button class="btn3" onclick="clearWrong()">오답노트 지우기</button>
+    </div>
+    <div id="wrongList" class="card">아직 오답이 없습니다.</div>
+  </section>
+
+  <section id="use" class="panel">
+    <div class="card">
+      <h2>활용하기</h2>
+      <p class="small">예문을 보고 빈칸에 단어를 써 보세요.</p>
+      <div id="useBox"></div>
+    </div>
+  </section>
+
+  <section id="input" class="panel">
+    <div class="card">
+      <h2>입력/저장</h2>
+      <p class="notice">
+        입력한 내용을 저장한 뒤, 아래 <b>저장 목록</b>에서 해당 저장 내용을 누르면 앱 전체에 바로 반영됩니다.
+      </p>
+
+      <label class="small">입력 순서</label>
+      <select id="formatSelect" style="margin:6px 0 10px 0;">
+        <option value="word_sentence_meaning">단어 / 예문 / 뜻</option>
+        <option value="word_meaning_sentence">단어 / 뜻 / 예문</option>
+      </select>
+
+      <textarea id="rawInput" placeholder="apple	 I eat an apple.	 a fruit
+dog	 The dog runs.	 an animal"></textarea>
+
+      <div class="row" style="margin-top:10px;">
+        <input id="saveName" placeholder="저장 이름 예: 1단원 단어" />
+        <button class="btn" onclick="saveCurrentInput()">저장하기</button>
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <button class="btn" onclick="applyInputOnly()">입력 내용 바로 반영</button>
+        <button class="btn4" onclick="clearInputOnly()">입력창 지우기</button>
+        <button class="btn3" onclick="clearAll()">전체 지우기</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>저장 목록</h2>
+      <div id="savedList">아직 저장된 내용이 없습니다.</div>
+    </div>
+  </section>
+
+  <section id="all" class="panel">
+    <div class="card">
+      <h2>전체 내용</h2>
+      <div id="allList">아직 반영된 단어가 없습니다.</div>
+    </div>
+  </section>
+</main>
+
+<script>
+let words = [];
+let wrongWords = [];
+let savedSets = [];
+let currentIndex = 0;
+let currentQuiz = null;
+
+function init(){
+  words = loadJson("v15_words_fixed", []);
+  wrongWords = loadJson("v15_wrong_fixed", []);
+  savedSets = loadJson("v15_saved_sets_fixed", []);
+
+  if(words.length === 0){
+    words = [
+      {word:"apple", sentence:"I eat an apple.", meaning:"a fruit"},
+      {word:"dog", sentence:"The dog runs.", meaning:"an animal"},
+      {word:"book", sentence:"I read a book.", meaning:"many pages to read"},
+      {word:"sun", sentence:"The sun is hot.", meaning:"a bright star"}
+    ];
+    saveWords();
+  }
+
+  renderAll();
+}
+
+function loadJson(key, fallback){
+  try{
+    return JSON.parse(localStorage.getItem(key)) || fallback;
+  }catch(e){
+    return fallback;
+  }
+}
+
+function saveWords(){
+  localStorage.setItem("v15_words_fixed", JSON.stringify(words));
+}
+
+function saveWrong(){
+  localStorage.setItem("v15_wrong_fixed", JSON.stringify(wrongWords));
+}
+
+function saveSavedSets(){
+  localStorage.setItem("v15_saved_sets_fixed", JSON.stringify(savedSets));
+}
+
+function parseText(text, format){
+  const lines = String(text || "")
+    .split(/\r?\n/)
+    .map(v => v.trim())
+    .filter(Boolean);
+
+  const parsed = [];
+
+  for(const line of lines){
+    let parts;
+    if(line.includes("\t")){
+      parts = line.split("\t");
+    }else if(line.includes("|")){
+      parts = line.split("|");
+    }else{
+      parts = splitCsvSimple(line);
+    }
+
+    parts = parts.map(v => (v || "").trim());
+
+    let word = "";
+    let sentence = "";
+    let meaning = "";
+
+    if(format === "word_meaning_sentence"){
+      word = parts[0] || "";
+      meaning = parts[1] || "";
+      sentence = parts[2] || "";
+    }else{
+      word = parts[0] || "";
+      sentence = parts[1] || "";
+      meaning = parts[2] || "";
+    }
+
+    if(word || sentence || meaning){
+      parsed.push({word, sentence, meaning});
+    }
+  }
+
+  return parsed;
+}
+
+function splitCsvSimple(line){
+  const result = [];
+  let cur = "";
+  let inQuotes = false;
+
+  for(let i=0;i<line.length;i++){
+    const ch = line[i];
+    if(ch === '"'){
+      inQuotes = !inQuotes;
+    }else if(ch === "," && !inQuotes){
+      result.push(cur);
+      cur = "";
+    }else{
+      cur += ch;
+    }
+  }
+  result.push(cur);
+  return result;
+}
+
+function applyParsedToApp(parsed){
+  words = parsed;
+  currentIndex = 0;
+  currentQuiz = null;
+  saveWords();
+  renderAll();
+  openTab("learn");
+}
+
+function applyInputOnly(){
+  const raw = document.getElementById("rawInput").value;
+  const format = document.getElementById("formatSelect").value;
+  const parsed = parseText(raw, format);
+  applyParsedToApp(parsed);
+}
+
+function saveCurrentInput(){
+  const raw = document.getElementById("rawInput").value;
+  const format = document.getElementById("formatSelect").value;
+  const parsed = parseText(raw, format);
+
+  if(parsed.length === 0){
+    alert("저장할 단어가 없습니다.");
+    return;
+  }
+
+  let name = document.getElementById("saveName").value.trim();
+  if(!name){
+    const now = new Date();
+    name = "저장 단어 " + now.toLocaleDateString() + " " + now.toLocaleTimeString();
+  }
+
+  const set = {
+    id: Date.now().toString(),
+    name,
+    raw,
+    format,
+    words: parsed,
+    createdAt: new Date().toISOString()
+  };
+
+  savedSets.unshift(set);
+  saveSavedSets();
+
+  document.getElementById("saveName").value = "";
+  renderSavedList();
+
+  applyParsedToApp(parsed);
+}
+
+function applySavedSet(id){
+  const set = savedSets.find(s => s.id === id);
+  if(!set) return;
+
+  document.getElementById("rawInput").value = set.raw || "";
+  document.getElementById("formatSelect").value = set.format || "word_sentence_meaning";
+
+  applyParsedToApp(set.words || []);
+}
+
+function deleteSavedSet(id){
+  savedSets = savedSets.filter(s => s.id !== id);
+  saveSavedSets();
+  renderSavedList();
+}
+
+function clearInputOnly(){
+  document.getElementById("rawInput").value = "";
+}
+
+function clearAll(){
+  if(!confirm("입력창, 현재 단어, 오답노트를 모두 지울까요? 저장 목록은 유지됩니다.")) return;
+
+  document.getElementById("rawInput").value = "";
+  words = [];
+  wrongWords = [];
+  currentIndex = 0;
+  currentQuiz = null;
+  saveWords();
+  saveWrong();
+  renderAll();
+}
+
+function renderSavedList(){
+  const box = document.getElementById("savedList");
+
+  if(!savedSets.length){
+    box.innerHTML = "아직 저장된 내용이 없습니다.";
+    return;
+  }
+
+  box.innerHTML = savedSets.map(set => `
+    <div class="saved-item">
+      <div class="saved-title">${escapeHtml(set.name)}</div>
+      <div class="small">${(set.words || []).length}개 단어 저장됨</div>
+      <div class="row" style="margin-top:8px;">
+        <button class="btn" onclick="applySavedSet('${set.id}')">이 저장 내용으로 학습하기</button>
+        <button class="btn3" onclick="deleteSavedSet('${set.id}')">삭제</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+function escapeHtml(str){
+  return String(str || "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+function highlight(sentence, word){
+  sentence = escapeHtml(sentence);
+  word = String(word || "").trim();
+  if(!word) return sentence;
+
+  const safeWord = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp("(" + safeWord + ")", "gi");
+  return sentence.replace(re, "<mark>$1</mark>");
+}
+
+function renderLearn(){
+  const box = document.getElementById("learnCard");
+  const progress = document.getElementById("learnProgress");
+
+  if(!words.length){
+    progress.textContent = "0 / 0";
+    box.innerHTML = "입력/저장에서 단어를 넣어 주세요.";
+    return;
+  }
+
+  if(currentIndex >= words.length) currentIndex = 0;
+  const item = words[currentIndex];
+
+  progress.textContent = (currentIndex + 1) + " / " + words.length;
+
+  box.innerHTML = `
+    <div class="word">${escapeHtml(item.word)}</div>
+    <div class="example">${highlight(item.sentence, item.word)}</div>
+    <div class="meaning">${escapeHtml(item.meaning)}</div>
+  `;
+}
+
+function nextCard(){
+  if(!words.length) return;
+  currentIndex = (currentIndex + 1) % words.length;
+  renderLearn();
+}
+
+function prevCard(){
+  if(!words.length) return;
+  currentIndex = (currentIndex - 1 + words.length) % words.length;
+  renderLearn();
+}
+
+function renderAllList(){
+  const list = document.getElementById("allList");
+
+  if(!words.length){
+    list.innerHTML = "아직 반영된 단어가 없습니다.";
+    return;
+  }
+
+  list.innerHTML = words.map((item, idx) => `
+    <div class="card">
+      <div class="word">${idx + 1}. ${escapeHtml(item.word)}</div>
+      <div class="example">${highlight(item.sentence, item.word)}</div>
+      <div class="meaning">${escapeHtml(item.meaning)}</div>
+    </div>
+  `).join("");
+}
+
+function makeQuiz(){
+  const box = document.getElementById("quizBox");
+
+  if(words.length < 4){
+    box.innerHTML = "단어를 4개 이상 입력하면 문제가 나옵니다.";
+    return;
+  }
+
+  const answer = words[Math.floor(Math.random() * words.length)];
+  const pool = words.filter(w => w.word !== answer.word);
+  const choices = [answer];
+
+  while(choices.length < 4 && pool.length){
+    const pick = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
+    choices.push(pick);
+  }
+
+  choices.sort(() => Math.random() - 0.5);
+  currentQuiz = { answer, choices };
+
+  box.innerHTML = `
+    <div class="meaning">${escapeHtml(answer.meaning)}</div>
+    <div>
+      ${choices.map(c => `<button class="choice" onclick="checkQuiz('${escapeHtml(c.word)}')">${escapeHtml(c.word)}</button>`).join("")}
+    </div>
+    <div id="quizResult" style="margin-top:10px;"></div>
+  `;
+}
+
+function checkQuiz(chosen){
+  if(!currentQuiz) return;
+  const result = document.getElementById("quizResult");
+  const buttons = document.querySelectorAll("#quizBox .choice");
+  const answerWord = currentQuiz.answer.word;
+
+  buttons.forEach(btn => {
+    if(btn.textContent === answerWord) btn.classList.add("correctChoice");
+    if(btn.textContent === chosen && chosen !== answerWord) btn.classList.add("wrongChoice");
+    btn.disabled = true;
+  });
+
+  if(chosen === answerWord){
+    result.innerHTML = `<span class="correct">맞았어요.</span>`;
+  }else{
+    result.innerHTML = `<span class="wrong">틀렸어요. 정답은 ${escapeHtml(answerWord)} 입니다.</span>`;
+    addWrong(currentQuiz.answer);
+  }
+}
+
+function addWrong(item){
+  if(!wrongWords.some(w => w.word === item.word)){
+    wrongWords.push(item);
+    saveWrong();
+    renderWrong();
+  }
+}
+
+function renderWrong(){
+  const box = document.getElementById("wrongList");
+
+  if(!wrongWords.length){
+    box.innerHTML = "아직 오답이 없습니다.";
+    return;
+  }
+
+  box.innerHTML = wrongWords.map((item, idx) => `
+    <div class="card">
+      <div class="word">${idx + 1}. ${escapeHtml(item.word)}</div>
+      <div class="example">${highlight(item.sentence, item.word)}</div>
+      <div class="meaning">${escapeHtml(item.meaning)}</div>
+    </div>
+  `).join("");
+}
+
+function clearWrong(){
+  wrongWords = [];
+  saveWrong();
+  renderWrong();
+}
+
+function renderUse(){
+  const box = document.getElementById("useBox");
+
+  if(!words.length){
+    box.innerHTML = "단어를 먼저 입력하세요.";
+    return;
+  }
+
+  box.innerHTML = words.map((item, idx) => {
+    const blankSentence = escapeHtml(item.sentence).replace(
+      new RegExp(item.word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"),
+      "_____"
+    );
+
+    return `
+      <div class="card">
+        <div class="meaning">${idx + 1}. ${escapeHtml(item.meaning)}</div>
+        <div class="example">${blankSentence}</div>
+        <input placeholder="단어를 써 보세요" oninput="checkUse(this, '${escapeHtml(item.word)}')">
+        <div class="small"></div>
+      </div>
+    `;
+  }).join("");
+}
+
+function checkUse(input, answer){
+  const msg = input.nextElementSibling;
+  if(input.value.trim().toLowerCase() === answer.toLowerCase()){
+    msg.innerHTML = `<span class="correct">맞았어요.</span>`;
+  }else{
+    msg.innerHTML = "";
+  }
+}
+
+function renderAll(){
+  renderLearn();
+  renderAllList();
+  renderWrong();
+  renderUse();
+  renderSavedList();
+}
+
+function openTab(name){
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+
+  document.querySelector(`.tab[data-tab="${name}"]`)?.classList.add("active");
+  document.getElementById(name)?.classList.add("active");
+
+  if(name === "quiz") makeQuiz();
+  if(name === "use") renderUse();
+  if(name === "wrong") renderWrong();
+  if(name === "all") renderAllList();
+  if(name === "input") renderSavedList();
+}
+
+document.querySelectorAll(".tab").forEach(btn => {
+  btn.addEventListener("click", () => openTab(btn.dataset.tab));
+});
+
+init();
+</script>
+</body>
+</html>
